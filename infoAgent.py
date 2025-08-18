@@ -81,24 +81,24 @@ def gatherInformation(areasOfInterest, model, processor, imagePath):
 if __name__ == "__main__":
     areasOfInterest = [
         "lighting, mismatched, around, unnatural, skin",
-        # "manipulation, artifacts, edges, inconsistencies, blending",
-        # "manipulated, features, tone, color, inconsistent",
-        # "forensic, definitive, tones, mismatches, transitions",
-        # "natural, consistent, hairline, body, jawline",
-        # "compositing, inspection, along, metadata, distortions",
-        # "hair, details, altered, neck, clues",
-        # "surrounding, background, video, jaw, head",
-        # "strong, match, original, reference, subtle",
-        # "unedited, indicators, frames, unaltered, visible",
-        # "distorted, resolution, texture, mismatch, multiple",
-        # "telltale, area, digitally, blend, overlaid",
-        # "coherent, quality, detailed, areas, near",
-        # "contours, conclude, overt, mouth, photograph",
-        # "information, absolute"
+        "manipulation, artifacts, edges, inconsistencies, blending",
+        "manipulated, features, tone, color, inconsistent",
+        "forensic, definitive, tones, mismatches, transitions",
+        "natural, consistent, hairline, body, jawline",
+        "compositing, inspection, along, metadata, distortions",
+        "hair, details, altered, neck, clues",
+        "surrounding, background, video, jaw, head",
+        "strong, match, original, reference, subtle",
+        "unedited, indicators, frames, unaltered, visible",
+        "distorted, resolution, texture, mismatch, multiple",
+        "telltale, area, digitally, blend, overlaid",
+        "coherent, quality, detailed, areas, near",
+        "contours, conclude, overt, mouth, photograph",
+        "information, absolute"
     ]
 
     model, processor = init()
-    analysis = gatherInformation(areasOfInterest, model, processor, "image.png")
+    analysis = gatherInformation(areasOfInterest, model, processor, "images/fake.png")
 
 
 

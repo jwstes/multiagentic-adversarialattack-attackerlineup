@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Analysis Visualization</title>
+    <style>
+        /* General Body & Font Styles */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f7f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        /* Main Title */
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 40px;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+
+        /* Container for the two columns */
+        .container {
+            display: flex;
+            flex-wrap: wrap; /* Allows columns to stack on smaller screens */
+            gap: 30px;
+            justify-content: center;
+        }
+
+        /* Styling for each column (Real vs. Fake) */
+        .column {
+            flex: 1;
+            min-width: 400px; /* Minimum width before wrapping */
+            max-width: 800px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            padding: 25px;
+            box-sizing: border-box;
+        }
+
+        /* Column Headers */
+        .column h2 {
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: #34495e;
+            font-size: 1.8em;
+        }
+        
+        #real-column h2 { color: #27ae60; } /* Green for Real */
+        #fake-column h2 { color: #c0392b; } /* Red for Fake */
+
+
+        /* Image Styling */
+        .column img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            border: 1px solid #ddd;
+        }
+
+        /* Styling for each analysis item card */
+        .analysis-item {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        /* Area Heading */
+        .analysis-item h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #34495e;
+            font-size: 1.2em;
+            text-transform: capitalize;
+        }
+
+        /* Reasoning and Conclusion Paragraphs */
+        .analysis-item p {
+            margin: 5px 0;
+            line-height: 1.6;
+        }
+        
+        .analysis-item p strong {
+            color: #555;
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>Image Analysis: Real vs. AI-Generated</h1>
+
+    <div class="container">
+        <!-- REAL IMAGE COLUMN -->
+        <div class="column" id="real-column">
+            <h2>Real Image</h2>
+            <img src="real.png" alt="Real Image">
+            <div class="json-data" id="real-json-data">
+                <!-- Real JSON data will be loaded here -->
+            </div>
+        </div>
+
+        <!-- FAKE IMAGE COLUMN -->
+        <div class="column" id="fake-column">
+            <h2>AI-Generated Image</h2>
+            <img src="fake.png" alt="AI-Generated Image">
+            <div class="json-data" id="fake-json-data">
+                <!-- Fake JSON data will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // This function fetches a JSON file and renders its content to a target element
+        function loadAndDisplayJson(jsonPath, targetElementId) {
+            const targetElement = document.getElementById(targetElementId);
+
+            fetch(jsonPath)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    let htmlContent = '';
+                    // Loop through each analysis object in the JSON array
+                    data.forEach(item => {
+                        htmlContent += `
+                            <div class="analysis-item">
+                                <h3>${item.area}</h3>
+                                <p><strong>Reasoning:</strong> ${item.reasoning}</p>
+                                <p><strong>Conclusion:</strong> ${item.conclusion}</p>
+                            </div>
+                        `;
+                    });
+                    targetElement.innerHTML = htmlContent;
+                })
+                .catch(error => {
+                    console.error('Error loading or parsing JSON:', error);
+                    targetElement.innerHTML = `<p style="color: red;">Error: Could not load data from ${jsonPath}. Please check the file path and ensure it is valid JSON.</p>`;
+                });
+        }
+
+        // Wait until the DOM is fully loaded before running the script
+        document.addEventListener('DOMContentLoaded', () => {
+            loadAndDisplayJson('real.json', 'real-json-data');
+            loadAndDisplayJson('fake.json', 'fake-json-data');
+        });
+    </script>
+
+</body>
+</html>
