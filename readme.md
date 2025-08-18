@@ -1,18 +1,18 @@
 
 
 **Setting Up Conda Env:**
-conda create --name magentaa-attackerside python=3.11.13
-conda activate magentaa-attackerside
+- conda create --name magentaa-attackerside python=3.11.13
+- conda activate magentaa-attackerside
 
 
 **Installing Packages:**
-pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
-pip install git+https://github.com/huggingface/transformers accelerate
-pip install qwen-vl-utils[decord]==0.0.8 bitsandbytes safetensors
+- pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
+- pip install git+https://github.com/huggingface/transformers accelerate
+- pip install qwen-vl-utils[decord]==0.0.8 bitsandbytes safetensors
 
 
 **First Run:**
-python quentize.py
+- python quentize.py
 
 **Subsequent Runs:**
-python infoAgent.py
+- python infoAgent.py
