@@ -1,24 +1,34 @@
-from transformers import Qwen2_5_VLForConditionalGeneration, AutoTokenizer, AutoProcessor
+import warnings
+from transformers import logging
+warnings.filterwarnings("ignore")
+logging.set_verbosity_error()
+
+
+from transformers import Qwen2_5_VLForConditionalGeneration, BitsAndBytesConfig, AutoProcessor
 from qwen_vl_utils import process_vision_info
 import json
 import config
+import torch
 
-useQuantizedVersion = True
-if useQuantizedVersion:
-    model_name = f"./{config.hfModelName}-4bit"
-else:
-    model_name = f"{config.hfModelFamily}{config.hfModelName}"
 
-min_pixels = 256*28*28
-max_pixels = 1280*28*28
-MAX_TOKEN_COUNT = 2048
+model_name = f"{config.hfModelFamily}{config.hfModelName}"
+min_pixels = config.min_pixels
+max_pixels = config.max_pixels
+MAX_TOKEN_COUNT = config.ia_max_token_count
 
 prompt = open('prompt.txt', 'r').read()
 
-
 def init():
+    bnb_config = BitsAndBytesConfig(
+        load_in_4bit=True,  # Set False for 8-bit
+        bnb_4bit_compute_dtype=torch.float16
+    )
+    
     model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
-        model_name, torch_dtype="auto", device_map="auto"
+        model_name, 
+        torch_dtype="auto", 
+        device_map="auto",
+        quantization_config=bnb_config,
     )
     
     processor = AutoProcessor.from_pretrained(
@@ -81,20 +91,20 @@ def gatherInformation(areasOfInterest, model, processor, imagePath):
 if __name__ == "__main__":
     areasOfInterest = [
         "lighting, mismatched, around, unnatural, skin",
-        "manipulation, artifacts, edges, inconsistencies, blending",
-        "manipulated, features, tone, color, inconsistent",
-        "forensic, definitive, tones, mismatches, transitions",
-        "natural, consistent, hairline, body, jawline",
-        "compositing, inspection, along, metadata, distortions",
-        "hair, details, altered, neck, clues",
-        "surrounding, background, video, jaw, head",
-        "strong, match, original, reference, subtle",
-        "unedited, indicators, frames, unaltered, visible",
-        "distorted, resolution, texture, mismatch, multiple",
-        "telltale, area, digitally, blend, overlaid",
-        "coherent, quality, detailed, areas, near",
-        "contours, conclude, overt, mouth, photograph",
-        "information, absolute"
+        # "manipulation, artifacts, edges, inconsistencies, blending",
+        # "manipulated, features, tone, color, inconsistent",
+        # "forensic, definitive, tones, mismatches, transitions",
+        # "natural, consistent, hairline, body, jawline",
+        # "compositing, inspection, along, metadata, distortions",
+        # "hair, details, altered, neck, clues",
+        # "surrounding, background, video, jaw, head",
+        # "strong, match, original, reference, subtle",
+        # "unedited, indicators, frames, unaltered, visible",
+        # "distorted, resolution, texture, mismatch, multiple",
+        # "telltale, area, digitally, blend, overlaid",
+        # "coherent, quality, detailed, areas, near",
+        # "contours, conclude, overt, mouth, photograph",
+        # "information, absolute"
     ]
 
     model, processor = init()

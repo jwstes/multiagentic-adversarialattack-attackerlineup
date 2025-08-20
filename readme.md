@@ -1,5 +1,3 @@
-
-
 **Setting Up Conda Env:**
 - conda create --name magentaa-attackerside python=3.11.13
 - conda activate magentaa-attackerside
@@ -12,8 +10,10 @@
 - pip install qwen-vl-utils[decord]==0.0.8 bitsandbytes safetensors
 
 
-**First Run:**
-- python quantize.py
-
-**Subsequent Runs:**
+**Quick Run:**
 - python infoAgent.py
+
+**Info**
+- `infoAgent.py` loads the model specified in `config.py` in 4 bit mode
+- `generateVectorStore.py` doesn't need to be ran again.
+- `queryVectorStore.py` can be used to query the vector store lol
