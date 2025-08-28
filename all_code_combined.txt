@@ -1,0 +1,674 @@
+================================================================================
+FILENAME: ./infoAgent.py
+================================================================================
+
+import warnings
+from transformers import logging
+warnings.filterwarnings("ignore")
+logging.set_verbosity_error()
+
+
+from transformers import Qwen2_5_VLForConditionalGeneration, BitsAndBytesConfig, AutoProcessor
+from qwen_vl_utils import process_vision_info
+import json
+from misc import config
+import torch
+import time
+
+
+model_name = f"{config.hfModelFamily}{config.hfModelName}"
+min_pixels = config.min_pixels
+max_pixels = config.max_pixels
+MAX_TOKEN_COUNT = config.ia_max_token_count
+
+prompt = open('misc/prompt-infoAgent.txt', 'r').read()
+
+def init():
+    bnb_config = BitsAndBytesConfig(
+        load_in_4bit=True,  # Set False for 8-bit
+        bnb_4bit_compute_dtype=torch.float16
+    )
+    
+    model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
+        model_name, 
+        torch_dtype="auto", 
+        device_map="auto",
+        quantization_config=bnb_config,
+    )
+    
+    processor = AutoProcessor.from_pretrained(
+        model_name, 
+        min_pixels=min_pixels, 
+        max_pixels=max_pixels
+    )
+    return model, processor
+
+def gatherInformation(areasOfInterest, model, processor, imagePath):
+    analysis = []
+    for interest in areasOfInterest:
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image",
+                        "image": imagePath,
+                    },
+                    {
+                        "type": "text", 
+                        "text": f"{prompt} \n\n {interest}",
+                    },
+                ],
+            }
+        ]
+
+        text = processor.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True
+        )
+        image_inputs, video_inputs = process_vision_info(messages)
+        inputs = processor(
+            text=[text],
+            images=image_inputs,
+            videos=video_inputs,
+            padding=True,
+            return_tensors="pt",
+        )
+        inputs = inputs.to("cuda")
+
+        generated_ids = model.generate(**inputs, max_new_tokens=MAX_TOKEN_COUNT)
+        generated_ids_trimmed = [
+            out_ids[len(in_ids) :] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
+        ]
+        output_text = processor.batch_decode(
+            generated_ids_trimmed, skip_special_tokens=True, clean_up_tokenization_spaces=False
+        )
+
+        modelResponse = output_text[0]
+        tailAndHeaderSrip = modelResponse.split('```json')[1].split('```')[0]
+        jsonVersion = json.loads(tailAndHeaderSrip)
+        for item in jsonVersion:
+            analysis.append(item)
+
+        print(f"{interest} : Done")
+
+    return analysis
+
+def extractInfo(model, processor):
+    print("[Info Agent]: Extracting Information...")
+    sT = time.time()
+    areasOfInterest = [
+        "lighting, mismatched, around, unnatural, skin",
+        # "manipulation, artifacts, edges, inconsistencies, blending",
+        # "manipulated, features, tone, color, inconsistent",
+        # "forensic, definitive, tones, mismatches, transitions",
+        # "natural, consistent, hairline, body, jawline",
+        # "compositing, inspection, along, metadata, distortions",
+        # "hair, details, altered, neck, clues",
+        # "surrounding, background, video, jaw, head",
+        # "strong, match, original, reference, subtle",
+        # "unedited, indicators, frames, unaltered, visible",
+        # "distorted, resolution, texture, mismatch, multiple",
+        # "telltale, area, digitally, blend, overlaid",
+        # "coherent, quality, detailed, areas, near",
+        # "contours, conclude, overt, mouth, photograph",
+        # "information, absolute"
+    ]
+
+    # model, processor = init()
+    analysis = gatherInformation(areasOfInterest, model, processor, "images/fake.png")
+
+    file = open("output/analysis.json", "w")
+    file.write(json.dumps(analysis, indent=4))
+    file.close()
+
+    eT = time.time()
+    print("[Info Agent]: Done. It took (seconds)", eT - sT)
+
+    return analysis
+
+
+
+
+================================================================================
+FILENAME: ./thinkingAgent.py
+================================================================================
+
+from transformers import pipeline
+import torch
+import json
+import time
+
+from misc import attackMethods
+
+prompt = open('misc/prompt-thinkingAgent.txt', 'r').read()
+# analysis = json.loads(open('output/analysis.json', 'r').read())
+# context = open('output/vectorStoreResults.txt', 'r').read()
+
+def formatAttackMethods():
+    stringifiedMethods = ""
+    for method in attackMethods.all_methods:
+        stringifiedMethods += f"{method}, "
+
+    return stringifiedMethods
+
+def thinkAndSelectMethod(imageAnalysis, context):
+    print("[Thinking Agent]: Thinking...")
+
+    sT = time.time()
+    
+    model_id = "openai/gpt-oss-20b"
+    pipe = pipeline(
+        "text-generation",
+        model=model_id,
+        torch_dtype="auto",
+        device_map="auto",
+    )
+    messages = [
+        {"role": "system", "content": prompt},
+        {"role": "user", "content": f"""
+    Available methods: {formatAttackMethods()}
+    Image facts: {imageAnalysis}
+    Retrieved evidence: {context}
+    """},
+    ]
+
+    outputs = pipe(
+        messages,
+        max_new_tokens=1024,
+    )
+
+    eT = time.time()
+
+    print("[Thinking Agent]: Done. It took (seconds)", eT - sT)
+    finalOutput = outputs[0]["generated_text"][-1]['content']
+
+    file = open('output/thinkingAgentOutput.txt', 'w')
+    file.writelines(finalOutput)
+    file.close()
+
+    return finalOutput
+
+
+
+
+================================================================================
+FILENAME: ./pickamethod.py
+================================================================================
+
+import time
+import multiprocessing
+from multiprocessing import Process, Queue
+
+
+def info_agent_worker(result_queue):
+    print("[Subprocess]: Info Agent process started.")
+    from infoAgent import init, extractInfo
+    model, processor = init()
+    analysis = extractInfo(model, processor)
+    print("[Subprocess]: Analysis complete. Putting result in queue.")
+    result_queue.put(analysis)
+    print("[Subprocess]: Process finished.")
+
+def queryVectorStore_worker(result_queue, imageAnalysis):
+    print("[Subprocess]: Query Vector Store process started.")
+    from vectorstore.queryVectorStore import startQuery
+    context = startQuery(imageAnalysis)
+    print("[Subprocess]: Query Vector Store complete. Putting result in queue.")
+    result_queue.put(context)
+    print("[Subprocess]: Process finished.")
+
+def thinking_agent_worker(result_queue, imageAnalysis, context):
+    print("[Subprocess]: Thinking Agent process started.")
+    from thinkingAgent import thinkAndSelectMethod
+    results = thinkAndSelectMethod(imageAnalysis, context)
+    print("[Subprocess]: Thinking complete. Putting result in queue.")
+    result_queue.put(results)
+    print("[Subprocess]: Process finished.")
+
+if __name__ == "__main__":
+    multiprocessing.set_start_method('spawn', force=True)
+    ia_result_queue = Queue()
+    qvc_result_queue = Queue()
+    ta_result_queue = Queue()
+
+
+    p = Process(target=info_agent_worker, args=(ia_result_queue,))
+    print("[Main Process]: Starting Info Agent subprocess...")
+    p.start()
+    p.join()
+    print("[Main Process]: Subprocess has finished.")
+    imageAnalysis = ia_result_queue.get()
+    print("[Main Process]: Received analysis result.")
+
+    print("")
+    print("=========================")
+    print("")
+
+
+    p = Process(target=queryVectorStore_worker, args=(qvc_result_queue,imageAnalysis))
+    print("[Main Process]: Starting Query Vector Store subprocess...")
+    p.start()
+    p.join()
+    print("[Main Process]: Subprocess has finished.")
+    context = qvc_result_queue.get()
+    print("[Main Process]: Received context result.")
+
+    print("")
+    print("=========================")
+    print("")
+
+    p = Process(target=thinking_agent_worker, args=(ta_result_queue,imageAnalysis,context))
+    print("[Main Process]: Starting Thinking Agent subprocess...")
+    p.start()
+    p.join()
+    print("[Main Process]: Subprocess has finished.")
+    thinkingText = ta_result_queue.get()
+    print("[Main Process]: Received result.")
+    
+    print("")
+    print(thinkingText)
+
+
+================================================================================
+FILENAME: ./vectorstore/generateVectorStore.py
+================================================================================
+
+from qdrant_client import QdrantClient, models
+import os
+from pypdf import PdfReader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from sentence_transformers import SentenceTransformer
+from tqdm import tqdm
+
+qdrant_client = QdrantClient(
+    url="https://5cf05368-4850-4f7a-8912-f2af8b6b788c.europe-west3-0.gcp.cloud.qdrant.io:6333", 
+    api_key="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0.rQVnGexdv6IYTOvcOEN5Q7EEo9Vq3wuQCwdibak7eIw",
+)
+
+COLLECTION_NAME = "ART-Toolbox-AttackStrategies"
+PDF_DIRECTORY = "allPDFs"
+SENTENCE_TRANSFORMER = "all-mpnet-base-v2"
+BATCH_SIZE = 128
+
+def extract_text_from_pdfs(pdf_directory: str) -> str:
+    text = ""
+    for filename in os.listdir(pdf_directory):
+        if filename.endswith(".pdf"):
+            pdf_path = os.path.join(pdf_directory, filename)
+            reader = PdfReader(pdf_path)
+            for page in reader.pages:
+                text += page.extract_text()
+    return text
+
+def chunk_text(text: str) -> list[str]:
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=1000,
+        chunk_overlap=200,
+        length_function=len
+    )
+    chunks = text_splitter.split_text(text)
+    return chunks
+
+def generate_embeddings(chunks: list[str]) -> list[list[float]]:
+    embedding_model = SentenceTransformer(SENTENCE_TRANSFORMER)
+    embeddings = embedding_model.encode(chunks, convert_to_tensor=False)
+    return embeddings
+
+# def store_in_qdrant(qdrant_client: QdrantClient, collection_name: str, embeddings: list[list[float]], chunks: list[str]):
+#     vector_size = len(embeddings[0])
+
+#     qdrant_client.recreate_collection(
+#         collection_name=collection_name,
+#         vectors_config=models.VectorParams(size=vector_size, distance=models.Distance.COSINE),
+#     )
+
+#     qdrant_client.upsert(
+#         collection_name=collection_name,
+#         points=models.Batch(
+#             ids=list(range(len(chunks))),
+#             vectors=embeddings,
+#             payloads=[{"text": chunk} for chunk in chunks]
+#         ),
+#         wait=True
+#     )
+
+def store_in_qdrant_batched(qdrant_client: QdrantClient, collection_name: str, embeddings: list[list[float]], chunks: list[str]):
+    vector_size = len(embeddings[0])
+
+    collection_exists = qdrant_client.collection_exists(collection_name=collection_name)
+    if not collection_exists:
+        print(f"Collection '{collection_name}' does not exist. Creating it.")
+        qdrant_client.create_collection(
+            collection_name=collection_name,
+            vectors_config=models.VectorParams(size=vector_size, distance=models.Distance.COSINE),
+        )
+    else:
+        print(f"Collection '{collection_name}' already exists. Skipping creation.")
+
+    total_chunks = len(chunks)
+    print(f"Upserting {total_chunks} points in batches of {BATCH_SIZE}...")
+    
+    for i in tqdm(range(0, total_chunks, BATCH_SIZE)):
+        start_idx = i
+        end_idx = min(i + BATCH_SIZE, total_chunks)
+
+        qdrant_client.upsert(
+            collection_name=collection_name,
+            points=models.Batch(
+                ids=list(range(start_idx, end_idx)),
+                vectors=embeddings[start_idx:end_idx],
+                payloads=[{"text": chunk} for chunk in chunks[start_idx:end_idx]]
+            ),
+            wait=True
+        )
+    print("Upserting complete.")
+
+print("Extracting Text from PDFs")
+text = extract_text_from_pdfs(PDF_DIRECTORY)
+print("Chunking Text")
+chunks = chunk_text(text)
+print("Generating Embeddings")
+embeddings = generate_embeddings(chunks)
+
+print("Storing in Qdrant")
+# store_in_qdrant(qdrant_client, COLLECTION_NAME, embeddings, chunks)
+store_in_qdrant_batched(qdrant_client, COLLECTION_NAME, embeddings, chunks)
+
+
+================================================================================
+FILENAME: ./vectorstore/queryVectorStore.py
+================================================================================
+
+import os
+from typing import List, Dict, Any, Tuple
+from qdrant_client import QdrantClient, models
+from sentence_transformers import SentenceTransformer, CrossEncoder
+import numpy as np
+from collections import defaultdict
+import textwrap
+import re
+import json
+import time
+
+# ----------------- Config -----------------
+QDRANT_URL = "https://5cf05368-4850-4f7a-8912-f2af8b6b788c.europe-west3-0.gcp.cloud.qdrant.io:6333"
+QDRANT_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0.rQVnGexdv6IYTOvcOEN5Q7EEo9Vq3wuQCwdibak7eIw"
+COLLECTION_NAME = "ART-Toolbox-AttackStrategies"
+
+EMBED_MODEL_NAME = "all-mpnet-base-v2"   # must match your index embeddings
+RERANKER_MODEL = "BAAI/bge-reranker-large"  # heavy local reranker; fits your GPU
+
+INIT_K = 80      # initial top-k per query (larger for recall)
+FUSED_K = 150    # after fusion
+RERANK_KEEP = 80 # keep this many into reranker
+FINAL_K = 12     # final contexts for LLM
+MMR_LAMBDA = 0.7
+
+# Detector/forensics synonyms (expand aggressively)
+DETECTOR_TERMS = [
+    "deepfake detection", "ai-generated image detection", "synthetic image detection",
+    "image forensics", "forensic detector", "forgery detection", "manipulation detection",
+    "authenticity detection", "gan image detector", "diffusion detector",
+    "face manipulation detection", "face forgery detection", "fake image detector",
+    "deepfake detector", "real vs fake detection", "splicing detection",
+    "PRNU", "noise residuals", "CNN-based detector", "transformer-based detector",
+    "GAN fingerprint", "spectral artifacts", "forensic traces"
+]
+
+# Method family terms (helpful for query variants/reranking context)
+METHOD_FAMILIES = [
+    "white-box", "black-box", "transfer-based", "query-efficient", "decision-based",
+    "score-based", "gradient-based", "ensemble attack",
+    "L_inf", "L∞", "L2", "L0", "LPIPS", "perceptual constraint", "SSIM",
+    "imperceptible", "small perturbation", "physical attack", "digital attack",
+]
+
+# ------------------------------------------
+qdrant = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
+embedder = SentenceTransformer(EMBED_MODEL_NAME)
+reranker = CrossEncoder(RERANKER_MODEL)
+
+def summarize_image_facts(facts: List[Dict[str, Any]]) -> str:
+    cues = []
+    for f in facts:
+        area = f.get("area", "")
+        concl = f.get("conclusion", "")
+        reason = f.get("reasoning", "")
+        if concl:
+            cues.append(f"{area}: {concl}")
+        elif reason:
+            cues.append(f"{area}: {reason}")
+    cue_text = "; ".join(cues[:25])
+    return textwrap.shorten(
+        f"Image forensic cues suggest possible AI-generation. Goal: evade AI-generated image/deepfake detector with minimal, imperceptible perturbations. Cues: {cue_text}",
+        width=1000, placeholder="..."
+    )
+
+def build_core_queries(image_summary: str, available_methods: List[str]) -> List[str]:
+    method_str = ", ".join(available_methods)
+    base = [
+        f"Adversarial attacks to evade AI-generated image/deepfake detectors (image forensics). Prefer imperceptible small Lp noise, both white-box and black-box. Methods available: {method_str}.",
+        f"Best attacks for forensic/manipulation detectors (CNN/Transformer). Consider L_inf/L2 constraints, transferability, and query-efficient decision/score-based methods. Methods: {method_str}.",
+        f"Attacks applicable to detection tasks (not just classifiers): decision-based black-box, score-based black-box, and gradient-based white-box options. Methods: {method_str}.",
+        f"Given forensic cues: {image_summary}. Choose attacks that reliably evade deepfake/synthetic image detectors under small Lp budgets. Which of {method_str} fit best?"
+    ]
+    # Expand with detector synonyms
+    expanded = [
+        f"Evading {{term}} with adversarial examples; imperceptible, small L_inf/L2; consider white/black-box and transfer-based. Methods: {method_str}."
+        .replace("{term}", t) for t in DETECTOR_TERMS
+    ]
+    # Add method family variants (helps dense retrieval recall)
+    family_q = [
+        f"Adversarial methods for {fam} to fool AI-generated image/forensic detectors. Methods: {method_str}."
+        for fam in METHOD_FAMILIES
+    ]
+    return base + expanded + family_q
+
+def method_probe_queries(available_methods: List[str]) -> List[str]:
+    probes = []
+    for m in available_methods:
+        for term in DETECTOR_TERMS:
+            probes.append(f"{m} attack for {term}: applicability, norms (L_inf/L2/L0/LPIPS), threat model (white/black-box), transferability, query complexity.")
+    return probes
+
+def encode(texts: List[str]) -> np.ndarray:
+    return embedder.encode(texts, convert_to_numpy=True, normalize_embeddings=True)
+
+def qdrant_search(query: str, k: int = INIT_K, query_filter: models.Filter | None = None) -> List[Dict[str, Any]]:
+    qv = encode([query])[0]
+    hits = qdrant.search(
+        collection_name=COLLECTION_NAME,
+        query_vector=qv,
+        limit=k,
+        with_payload=True,
+        with_vectors=False,
+        query_filter=query_filter
+    )
+    return [{
+        "id": h.id,
+        "score": float(h.score),
+        "payload": h.payload,
+        "text": h.payload.get("text", "")
+    } for h in hits]
+
+def rrf_fuse(result_lists: List[List[Dict[str, Any]]], k: int = FUSED_K, k_rrf: int = 60) -> List[Dict[str, Any]]:
+    scores = defaultdict(float)
+    id2doc = {}
+    for results in result_lists:
+        for rank, doc in enumerate(results, start=1):
+            scores[doc["id"]] += 1.0 / (k_rrf + rank)
+            id2doc[doc["id"]] = doc
+    ranked_ids = sorted(scores.keys(), key=lambda x: scores[x], reverse=True)[:k]
+    return [id2doc[i] for i in ranked_ids]
+
+def cross_encoder_rerank(query: str, docs: List[Dict[str, Any]], keep: int = RERANK_KEEP) -> List[Dict[str, Any]]:
+    pairs = [(query, d["text"]) for d in docs]
+    scores = reranker.predict(pairs)
+    ranked = sorted(zip(docs, scores), key=lambda x: x[1], reverse=True)
+    return [d for d, s in ranked[:min(keep, len(ranked))]]
+
+def keyword_boost(docs: List[Dict[str, Any]], positive_terms: List[str], boost: float = 0.25) -> List[Dict[str, Any]]:
+    # Adds a small bonus for detector/forensics lexical matches (post-rerank tie-breaker)
+    terms = [re.escape(t.lower()) for t in positive_terms]
+    if not terms:
+        return docs
+    pattern = re.compile("|".join(terms))
+    rescored = []
+    for rank, d in enumerate(docs):
+        text = d["text"].lower()
+        num_hits = len(pattern.findall(text))
+        # Attach a score proxy for tie-breaking that respects initial order
+        d2 = dict(d)
+        d2["_kw_boost"] = num_hits * boost
+        d2["_rank"] = rank
+        rescored.append(d2)
+    rescored.sort(key=lambda x: (x["_kw_boost"], -x["_rank"]), reverse=True)
+    return rescored
+
+def mmr_select(query: str, docs: List[Dict[str, Any]], final_k: int = FINAL_K, lambda_mult: float = MMR_LAMBDA) -> List[Dict[str, Any]]:
+    q_vec = encode([query])[0]
+    d_vecs = encode([d["text"] for d in docs])
+    selected, selected_idx, candidates = [], [], list(range(len(docs)))
+    sim_to_query = d_vecs @ q_vec
+    sim_between = d_vecs @ d_vecs.T
+    while len(selected) < min(final_k, len(docs)) and candidates:
+        if not selected:
+            idx = int(np.argmax(sim_to_query[candidates]))
+            idx = candidates[idx]
+        else:
+            best_idx, best_score = None, -1e9
+            for c in candidates:
+                diversity = max(sim_between[c, selected_idx]) if selected_idx else 0.0
+                mmr = lambda_mult * sim_to_query[c] - (1 - lambda_mult) * diversity
+                if mmr > best_score:
+                    best_score, best_idx = mmr, c
+            idx = best_idx
+        selected.append(docs[idx])
+        selected_idx.append(idx)
+        candidates.remove(idx)
+    return selected
+
+# Optional: Use this filter only if you run the post-tagging step below to set detector_related=True
+def make_detector_filter() -> models.Filter:
+    return models.Filter(
+        must=[
+            models.FieldCondition(
+                key="detector_related",
+                match=models.MatchValue(value=True)
+            )
+        ]
+    )
+
+def retrieve_contexts(available_methods: List[str], image_facts: List[Dict[str, Any]], use_filter: bool = False) -> Tuple[str, List[Dict[str, Any]]]:
+    image_summary = summarize_image_facts(image_facts)
+    core_queries = build_core_queries(image_summary, available_methods)
+    probes = method_probe_queries(available_methods)
+    all_queries = core_queries + probes
+
+    qfilter = make_detector_filter() if use_filter else None
+
+    # Dense search for each query
+    result_sets = [qdrant_search(q, k=INIT_K, query_filter=qfilter) for q in all_queries]
+
+    # RRF fuse
+    fused = rrf_fuse(result_sets, k=FUSED_K)
+
+    # Rerank with strong cross-encoder
+    anchor_query = core_queries[0]
+    reranked = cross_encoder_rerank(anchor_query, fused, keep=RERANK_KEEP)
+
+    # Keyword boost toward detector/forensics mentions
+    boosted = keyword_boost(reranked, DETECTOR_TERMS, boost=0.3)
+
+    # MMR for diversity
+    final_contexts = mmr_select(anchor_query, boosted, final_k=FINAL_K, lambda_mult=MMR_LAMBDA)
+    return anchor_query, final_contexts
+
+def startQuery(imageAnalysis):
+    from misc import attackMethods
+    available_methods = attackMethods.all_methods
+    image_facts = json.loads(open("output/analysis.json", "r").read())
+
+    print("[Vector Store] Querying Vector Store...")
+    sT = time.time()
+    query_str, contexts = retrieve_contexts(available_methods, image_facts, use_filter=False)
+    eT = time.time()
+
+    formattedContext = ""
+    for i, c in enumerate(contexts, 1):
+        formattedContext += f"\n[{i}]\n"
+        formattedContext += textwrap.shorten(c["text"], width=1000, placeholder="...")
+    
+    print("[Vector Store] Vector Store Queried. It took (seconds)", eT - sT)
+
+    file = open('output/vectorStoreResults.txt', 'w')
+    file.writelines(formattedContext)
+    file.close()
+    
+    return formattedContext
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+================================================================================
+FILENAME: ./misc/attackMethods.py
+================================================================================
+
+all_methods = [
+        "Auto Attack",
+        "Auto Projected Gradient Descent (Auto-PGD)",
+        "Auto Conjugate Gradient (Auto-CG)",
+        "Boundary Attack / Decision-Based Attack",
+        "Carlini and Wagner L_inf Attack",
+        "Composite Adversarial Attack - PyTorch",
+        "DeepFool",
+        "Elastic Net Attack",
+        "Fast Gradient Method (FGM)",
+        "Feature Adversaries - Numpy",
+        "Geometric Decision Based Attack",
+        "High Confidence Low Uncertainty Attack",
+        "HopSkipJump Attack",
+        "Basic Iterative Method (BIM)",
+        "Projected Gradient Descent (PGD) - PyTorch",
+        "NewtonFool",
+        "PixelAttack",
+        "ThresholdAttack",
+        "JSMA",
+        "Shadow Attack",
+        "Sign-OPT",
+        "Simple Black-box",
+        "Spatial Transform",
+        "Square Attack",
+        "Universal Perturbation",
+        "Virtual Adv. Method"
+]
+
+
+================================================================================
+FILENAME: ./misc/config.py
+================================================================================
+
+# INFO AGENT CONFIGURATION
+hfModelFamily = "Qwen/"
+hfModelName = "Qwen2.5-VL-32B-Instruct"
+min_pixels = 256*28*28
+max_pixels = 1280*28*28
+ia_max_token_count = 2048
+
+

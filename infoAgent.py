@@ -7,8 +7,9 @@ logging.set_verbosity_error()
 from transformers import Qwen2_5_VLForConditionalGeneration, BitsAndBytesConfig, AutoProcessor
 from qwen_vl_utils import process_vision_info
 import json
-import config
+from misc import config
 import torch
+import time
 
 
 model_name = f"{config.hfModelFamily}{config.hfModelName}"
@@ -16,7 +17,7 @@ min_pixels = config.min_pixels
 max_pixels = config.max_pixels
 MAX_TOKEN_COUNT = config.ia_max_token_count
 
-prompt = open('prompt.txt', 'r').read()
+prompt = open('misc/prompt-infoAgent.txt', 'r').read()
 
 def init():
     bnb_config = BitsAndBytesConfig(
@@ -88,16 +89,18 @@ def gatherInformation(areasOfInterest, model, processor, imagePath):
 
     return analysis
 
-if __name__ == "__main__":
+def extractInfo(model, processor):
+    print("[Info Agent]: Extracting Information...")
+    sT = time.time()
     areasOfInterest = [
         "lighting, mismatched, around, unnatural, skin",
-        # "manipulation, artifacts, edges, inconsistencies, blending",
-        # "manipulated, features, tone, color, inconsistent",
-        # "forensic, definitive, tones, mismatches, transitions",
-        # "natural, consistent, hairline, body, jawline",
-        # "compositing, inspection, along, metadata, distortions",
-        # "hair, details, altered, neck, clues",
-        # "surrounding, background, video, jaw, head",
+        "manipulation, artifacts, edges, inconsistencies, blending",
+        "manipulated, features, tone, color, inconsistent",
+        "forensic, definitive, tones, mismatches, transitions",
+        "natural, consistent, hairline, body, jawline",
+        "compositing, inspection, along, metadata, distortions",
+        "hair, details, altered, neck, clues",
+        "surrounding, background, video, jaw, head",
         # "strong, match, original, reference, subtle",
         # "unedited, indicators, frames, unaltered, visible",
         # "distorted, resolution, texture, mismatch, multiple",
@@ -107,15 +110,15 @@ if __name__ == "__main__":
         # "information, absolute"
     ]
 
-    model, processor = init()
+    # model, processor = init()
     analysis = gatherInformation(areasOfInterest, model, processor, "images/fake.png")
 
-
-
-
-
-    file = open("analysis.json", "w")
+    file = open("output/analysis.json", "w")
     file.write(json.dumps(analysis, indent=4))
     file.close()
 
+    eT = time.time()
+    print("[Info Agent]: Done. It took (seconds)", eT - sT)
+
+    return analysis
 

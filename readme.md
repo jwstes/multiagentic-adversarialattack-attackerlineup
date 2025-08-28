@@ -8,6 +8,7 @@
 - - or on linux: pip install torch torchvision
 - pip install git+https://github.com/huggingface/transformers accelerate
 - pip install qwen-vl-utils[decord]==0.0.8 bitsandbytes safetensors
+- pip install kernels sentence_transformers qdrant_client
 
 
 **Quick Run:**
