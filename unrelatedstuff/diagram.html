@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Cute Project Flow ☆</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #fff0f5; /* Lavender blush background */
+            color: #5b5b5b;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1, h2 {
+            text-align: center;
+            color: #d63384; /* Hot pink */
+            border-bottom: 2px dashed #f8b4cb; /* Light pink dashes */
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+        
+        h1::before, h1::after {
+            content: ' ☆ ';
+            color: #ffc107;
+        }
+
+        h2 {
+            font-style: italic;
+            color: #6f42c1; /* Purple */
+            border-bottom-style: dotted;
+        }
+
+        .flowchart-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-start;
+            gap: 20px;
+            margin-bottom: 50px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 25px;
+            box-shadow: 0 4px 15px rgba(231, 172, 196, 0.4);
+            border: 1px solid #fce4ec;
+        }
+
+        .orchestrator-container {
+            padding: 30px;
+            background-color: #f3e5f5; /* Light purple */
+            border: 3px dotted #ff85a2; /* Cute pink */
+            border-radius: 25px;
+            text-align: center;
+        }
+
+        .orchestrator-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #6a0dad; /* Deeper purple */
+            margin-bottom: 30px;
+            display: inline-block;
+            padding: 10px 20px;
+            background: #fff;
+            border-radius: 50px; /* Pill shape */
+            border: 2px solid #ce93d8;
+        }
+        .orchestrator-title i {
+            color: #ff69b4;
+        }
+        
+        .main-flow {
+            display: flex;
+            justify-content: center;
+            align-items: stretch;
+            gap: 20px;
+        }
+        
+        .stage {
+            flex: 1;
+            padding: 20px;
+            border: 1px solid #f8bbd0;
+            border-radius: 20px;
+            background-color: #ffffff;
+            min-width: 320px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .stage-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #c2185b; /* Deeper pink */
+            margin-bottom: 15px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #f48fb1;
+            width: 100%;
+            text-align: center;
+        }
+
+        .box {
+            width: 90%;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(189, 147, 249, 0.2);
+            position: relative;
+            border: 1px solid #eee;
+            border-left: 5px solid;
+        }
+        
+        .box i {
+            margin-right: 10px;
+        }
+
+        .box .title {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .box .details {
+            font-size: 0.9em;
+            color: #777;
+            font-style: italic;
+        }
+        
+        /* Kawaii Color Coding for Boxes */
+        .input-data { background-color: #e0f2f1; border-color: #4db6ac; } /* Mint */
+        .output-data { background-color: #fffde7; border-color: #ffd54f; } /* Soft Yellow */
+        .agent { background-color: #e3f2fd; border-color: #64b5f6; } /* Baby Blue */
+        .model { background-color: #feedf2; border-color: #f06292; } /* Peach */
+        .database { background-color: #ede7f6; border-color: #9575cd; } /* Lavender */
+        .orchestrator { background-color: #e8eaf6; border-color: #3f51b5; }
+        
+        .input-data i { color: #00796b; }
+        .output-data i { color: #fbc02d; }
+        .agent i { color: #1976d2; }
+        .model i { color: #c2185b; }
+        .database i { color: #512da8; }
+
+        /* Arrows */
+        .arrow {
+            font-size: 2.5em;
+            color: #ff85a2; /* Cute pink */
+            margin: 5px 0;
+            font-weight: bold;
+        }
+        .arrow i { transform: scaleY(1.2); }
+
+        .main-arrow-connector {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #c2185b;
+            font-weight: bold;
+        }
+        .main-arrow-connector .arrow {
+             font-size: 3em;
+        }
+        .main-arrow-connector .queue-label {
+            background: #fff;
+            border: 2px dashed #ffc107;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            color: #e67e22;
+        }
+        .main-arrow-connector .queue-label i {
+            margin-right: 5px;
+            color: #f57f17;
+        }
+        
+        /* Sub-flow for Vector Store */
+        .sub-flow-container {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border: 2px dotted #a5d6a7; /* Mint dotted border */
+            border-radius: 15px;
+            background-color: #f1f8e9; /* Super light green */
+        }
+        .sub-flow-title {
+            font-weight: bold;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            color: #388e3c; /* Dark green */
+        }
+        .sub-box {
+            width: 95%;
+            margin: 5px auto;
+            padding: 8px;
+            border-radius: 8px;
+            font-size: 0.8em;
+            border-left: 4px solid;
+            background: #fff;
+        }
+        .sub-box .title { font-weight: bold; }
+        .sub-arrow {
+            font-size: 1.2em;
+            color: #4caf50; /* Green */
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>Project Flow Diagram</h1>
+
+    <!-- ======================== SETUP PHASE ======================== -->
+    <h2>Phase 1: Vector Store Prep Party! (One-Time Setup)</h2>
+    <div class="flowchart-container">
+        <div class="box input-data">
+            <span class="title"><i class="fas fa-file-heart"></i>Cute PDF Scrolls</span>
+            <span class="details">Magic knowledge in <code>allPDFs/</code></span>
+        </div>
+        <div class="arrow">➜</div>
+        <div class="box agent">
+            <span class="title"><i class="fas fa-magic-wand-sparkles"></i>generateVectorStore.py</span>
+            <span class="details">Chunks & makes text sparkly for the database!</span>
+        </div>
+        <div class="arrow">➜</div>
+        <div class="box model">
+            <span class="title"><i class="fas fa-hat-wizard"></i>SentenceTransformer</span>
+            <span class="details">Casts an embedding spell on the text.</span>
+        </div>
+        <div class="arrow">➜</div>
+        <div class="box database">
+            <span class="title"><i class="fas fa-gem"></i>Qdrant Crystal Cave</span>
+            <span class="details">Keeps all the shiny text vectors safe.</span>
+        </div>
+    </div>
+
+
+    <!-- ====================== EXECUTION PHASE ====================== -->
+    <h2>Phase 2: Let's Go! (run <code>python pickamethod.py</code>)</h2>
+    <div class="orchestrator-container">
+        <div class="orchestrator-title"><i class="fas fa-cat"></i> Main Conductor: pickamethod.py</div>
+        <div class="main-flow">
+
+            <!-- Stage 1: Info Agent -->
+            <div class="stage">
+                <div class="stage-title">1. Info Agent's Mission</div>
+                <div class="box input-data">
+                    <span class="title"><i class="fas fa-image"></i>Picture to Inspect</span>
+                    <span class="details"><code>images/fake.png</code></span>
+                </div>
+                 <div class="box input-data">
+                    <span class="title"><i class="fas fa-scroll"></i>Secret Prompt</span>
+                    <span class="details"><code>misc/prompt-infoAgent.txt</code></span>
+                </div>
+                <div class="arrow"><i class="fas fa-long-arrow-alt-down"></i></div>
+                <div class="box agent">
+                    <span class="title"><i class="fas fa-robot"></i>infoAgent.py</span>
+                    <span class="details">A helpful bot starts its own adventure.</span>
+                </div>
+                <div class="arrow"><i class="fas fa-long-arrow-alt-down"></i></div>
+                <div class="box model">
+                    <span class="title"><i class="fas fa-dragon"></i>Qwen2.5-VL-32B</span>
+                    <span class="details">A friendly dragon looks at the picture.</span>
+                </div>
+                <div class="arrow"><i class="fas fa-long-arrow-alt-down"></i></div>
+                <div class="box output-data">
+                    <span class="title"><i class="fas fa-gift"></i>Picture Analysis Gift</span>
+                    <span class="details">Sent via <code>ia_result_queue</code> post.</span>
+                </div>
+            </div>
+
+            <div class="main-arrow-connector">
+                 <div class="arrow">➜</div>
+                 <div class="queue-label"><i class="fas fa-paper-plane"></i>ia_result_queue</div>
+                 <p>Waiting patiently...</p>
+            </div>
+
+            <!-- Stage 2: Vector Store Query -->
+            <div class="stage">
+                <div class="stage-title">2. Exploring the Crystal Cave</div>
+                <div class="box input-data">
+                     <span class="title"><i class="fas fa-star"></i>Analysis & Methods List</span>
+                    <span class="details">From the gift & <code>attackMethods.py</code></span>
+                </div>
+                <div class="arrow"><i class="fas fa-long-arrow-alt-down"></i></div>
+                <div class="box agent">
+                    <span class="title"><i class="fas fa-magnifying-glass"></i>queryVectorStore.py</span>
+                    <span class="details">The great knowledge hunt begins!</span>
+                </div>
+                
+                <!-- Detailed RAG Sub-Flow -->
+                <div class="sub-flow-container">
+                    <div class="sub-flow-title">The Secret Recipe for Finding Stuff:</div>
+                    <div class="sub-box model"><span class="title">1. Ask Lots of Questions</span><br>Make many queries!</div>
+                    <div class="sub-arrow"><i class="fas fa-arrow-down"></i></div>
+                    <div class="sub-box database"><span class="title">2. Gather All Sparkles</span><br>Find initial clues in Qdrant.</div>
+                    <div class="sub-arrow"><i class="fas fa-arrow-down"></i></div>
+                    <div class="sub-box agent"><span class="title">3. Mix & Match</span><br>Fuse the results together (RRF).</div>
+                     <div class="sub-arrow"><i class="fas fa-arrow-down"></i></div>
+                    <div class="sub-box model"><span class="title">4. Pick the Best Ones</span><br>A wise Cross-Encoder checks them.</div>
+                     <div class="sub-arrow"><i class="fas fa-arrow-down"></i></div>
+                    <div class="sub-box agent"><span class="title">5. Choose a Rainbow</span><br>MMR picks a colorful, diverse set!</div>
+                </div>
+
+                <div class="arrow"><i class="fas fa-long-arrow-alt-down"></i></div>
+                <div class="box output-data">
+                    <span class="title"><i class="fas fa-book-open"></i>Book of Wisdom</span>
+                    <span class="details">Sent via <code>qvc_result_queue</code> post.</span>
+                </div>
+            </div>
+            
+            <div class="main-arrow-connector">
+                 <div class="arrow">➜</div>
+                 <div class="queue-label"><i class="fas fa-paper-plane"></i>qvc_result_queue</div>
+                 <p>Still waiting patiently...</p>
+            </div>
+
+            <!-- Stage 3: Thinking Agent -->
+            <div class="stage">
+                <div class="stage-title">3. The Thinking Cap Moment</div>
+                 <div class="box input-data">
+                    <span class="title"><i class="fas fa-puzzle-piece"></i>All the Pieces!</span>
+                    <span class="details">Analysis, Wisdom, and a Thinking Prompt.</span>
+                </div>
+                <div class="arrow"><i class="fas fa-long-arrow-alt-down"></i></div>
+                <div class="box agent">
+                    <span class="title"><i class="fas fa-lightbulb"></i>thinkingAgent.py</span>
+                    <span class="details">Time for a big think!</span>
+                </div>
+                <div class="arrow"><i class="fas fa-long-arrow-alt-down"></i></div>
+                <div class="box model">
+                    <span class="title"><i class="fas fa-brain"></i>GPT-OSS-20B</span>
+                    <span class="details">A very smart friend helps decide.</span>
+                </div>
+                <div class="arrow"><i class="fas fa-long-arrow-alt-down"></i></div>
+                <div class="box output-data">
+                    <span class="title"><i class="fas fa-trophy"></i>The Final Answer!</span>
+                    <span class="details">Returned via <code>ta_result_queue</code>. Hooray!</span>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+    
+</body>
+</html>
