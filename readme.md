@@ -12,9 +12,6 @@
 
 
 **Quick Run:**
-- python infoAgent.py
+- python pickamethod.py
 
-**Info**
-- `infoAgent.py` loads the model specified in `config.py` in 4 bit mode
-- `generateVectorStore.py` doesn't need to be ran again.
-- `queryVectorStore.py` can be used to query the vector store lol
+![Alt text for the image](diagram.jpg)
