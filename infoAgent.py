@@ -122,3 +122,60 @@ def extractInfo(model, processor):
 
     return analysis
 
+
+
+
+
+# def extractInfo(model, processor, imagePath, imageName):
+#     print("[Info Agent]: Extracting Information...")
+#     sT = time.time()
+
+#     areasOfInterest = [
+#         "altered, area, around, artifacts, background",
+#         # "blend, blending, body, clues, coherent",
+#         # "color, compositing, conclude, consistent, contours",
+#         # "definitive, detailed, digitally, distorted, edges",
+#         # "features, forensic, hair, hairline, head",
+#         # "inconsistencies, indicators, information, inspection, jaw",
+#         # "jawline, lighting, manipulated, mismatched, mouth",
+#         # "natural, near, neck, original, overlaid",
+#         # "overt, photograph, quality, reference, resolution",
+#         # "skin, strong, subtle, surrounding, telltale signs",
+#         # "texture, tone, unaltered, unedited, unnatural, visible"
+#     ]
+
+#     # model, processor = init()
+#     analysis = gatherInformation(areasOfInterest, model, processor, imagePath)
+
+#     file = open(f"output/{imageName}.json", "w")
+#     file.write(json.dumps(analysis, indent=4))
+#     file.close()
+
+#     eT = time.time()
+#     print("[Info Agent]: Done. It took (seconds)", eT - sT)
+
+#     return analysis
+
+# def analysis():
+#     from pathlib import Path
+#     folder_path = Path("AADD-Dataset/hq")
+#     image_filepaths = list(folder_path.glob("*.png"))
+#     print(f"Found {len(image_filepaths)} .png images.")
+
+#     model, processor = init()
+
+#     for filepath in image_filepaths:
+#         print("")
+#         print("")
+#         print("")
+#         filename = filepath.stem
+#         print(filepath, filename)
+#         extractInfo(model, processor, str(filepath), filename)
+#         print("")
+#         print("")
+#         print("")
+
+#         break
+
+# analysis()
+
