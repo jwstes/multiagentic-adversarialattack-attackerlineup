@@ -76,13 +76,8 @@ logs/
 # Jupyter
 .ipynb_checkpoints/
 
-# Project outputs: Mixing Desk artifacts and large files
-data/mixing_desk/
-!data/mixing_desk/.gitkeep
 
 # Model weights (keep directory, ignore large binaries)
-models/
-!models/.gitkeep
 *.pth
 *.pt
 *.ckpt
