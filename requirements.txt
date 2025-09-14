@@ -1,0 +1,10 @@
+openai
+pydantic
+pillow
+python-dotenv
+numpy
+scikit-image
+tqdm
+pyyaml
+torch
+torchvision

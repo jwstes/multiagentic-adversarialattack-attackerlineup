@@ -1,17 +1,19 @@
-**Setting Up Conda Env:**
-- conda create --name magentaa-attackerside python=3.11.13
-- conda activate magentaa-attackerside
+VLLM SERVER SETUP
+1) conda create --name MultiAgenticResearch python=3.11
+2) conda activate MultiAgenticResearch
+3) conda install -c conda-forge gxx_linux-64 && pip install "vllm>=0.4.0" openai flashinfer-python
+4) vllm serve "Qwen/Qwen2.5-VL-32B-Instruct-AWQ" --seed 42 --max-model-len 72000
 
 
-**Installing Packages:**
-- pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
-- - or on linux: pip install torch torchvision
-- pip install git+https://github.com/huggingface/transformers accelerate
-- pip install qwen-vl-utils[decord]==0.0.8 bitsandbytes safetensors
-- pip install kernels sentence_transformers qdrant_client
 
 
-**Quick Run:**
-- python pickamethod.py
+Setup
+1) conda create --name mixingdeskadversarialattack python=3.11
+2) conda activate mixingdeskadversarialattack
+3) pip install -r requirements.txt
+4) cp .env.example .env
+5) Ensure vLLM is running and accessible at VLLM_BASE_URL
 
-![Alt text for the image](diagram.jpg)
+Run Attacking Lineup
+python run_attacker.py --image img_0006.png
+

@@ -1,0 +1,100 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+*.pyd
+*.dll
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+# Environment files
+.env
+.env.*
+!.env.example
+pip-wheel-metadata/
+pip-log.txt
+
+# Unit test / coverage reports
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# Type-checker / linter caches
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+.pyrightcache/
+.ruff_cache/
+
+# IDEs / Editors
+.vscode/
+.idea/
+*.code-workspace
+*.sublime-project
+*.sublime-workspace
+
+# OS-specific
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+logs/
+*.log
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Project outputs: Mixing Desk artifacts and large files
+data/mixing_desk/
+!data/mixing_desk/.gitkeep
+
+# Model weights (keep directory, ignore large binaries)
+models/
+!models/.gitkeep
+*.pth
+*.pt
+*.ckpt
+*.bin
+*.onnx
+
+# Numpy artifacts (e.g., track deltas)
+*.npy
+*.npz
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
