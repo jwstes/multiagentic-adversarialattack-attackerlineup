@@ -77,13 +77,6 @@ logs/
 .ipynb_checkpoints/
 
 
-# Model weights (keep directory, ignore large binaries)
-*.pth
-*.pt
-*.ckpt
-*.bin
-*.onnx
-
 # Numpy artifacts (e.g., track deltas)
 *.npy
 *.npz
