@@ -22,7 +22,7 @@ from ...critique.detectors import (
     build_transform_tensor,
 )
 from ...config import MODELS_DIR, DEVICE_CHOICE
-
+from ...config import MODELS_DIR, DEVICE_CHOICE, METHOD_PRINT_EVERY
 
 def _merge_strategies(global_s: Optional[dict], advisor_s: Optional[dict]) -> Optional[dict]:
     if not advisor_s and not global_s:
@@ -141,5 +141,24 @@ class MethodAgentBase(ABC):
             delta_path=delta_path,
             step=step,
         )
+
         self.desk.write_track(image_id, self.agent_name, meta)
-        print(f"[{self.agent_name}] step={step} ssim={ssim_val:.4f} avg_conf={avg_conf:.4f} -> {img_path}")
+
+        # Always print parameters and key metrics each loop
+        param_order = ["epsilon", "alpha", "steps", "frequency", "target_class"]
+        param_kv = [f"{k}={params[k]}" for k in param_order if k in params]
+        if not param_kv:
+            # Fallback: show whatever is in params
+            param_kv = [f"{k}={v}" for k, v in sorted(params.items())]
+
+        print(
+            f"[{self.agent_name}] step={step} params: {', '.join(param_kv)} | "
+            f"ssim={ssim_val:.4f} avg_conf={avg_conf:.4f} -> {img_path}"
+        )
+
+        msg = f"[{self.agent_name}] step={step} ssim={ssim_val:.4f} avg_conf={avg_conf:.4f} -> {img_path}"
+        if step % METHOD_PRINT_EVERY == 0:
+            print(msg)
+        else:
+            import logging
+            logging.getLogger("agents").debug(msg)

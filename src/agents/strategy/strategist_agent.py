@@ -48,7 +48,13 @@ class StrategistAgent:
             meta_path = os.path.join(self.desk.track_dir(image_id, name), "latest_meta.json")
             tracks[name] = _safe_read(meta_path, {})
         master_meta = _safe_read(os.path.join(self.desk.master_dir(image_id), "master_meta.json"), {})
-        panel = _safe_read(os.path.join(self.desk.feedback_dir(image_id), "panel.json"), {"entries": []})
+        
+        panel_obj = self.desk.load_feedback_panel(image_id)
+        try:
+            panel = panel_obj.model_dump()  # Pydantic -> dict
+        except Exception:
+            panel = {"image_id": image_id, "entries": []}
+
         info = _safe_read(os.path.join(self.desk._image_dir(image_id), "info_report_latest.json"), {})
         return {"objective": obj, "tracks": tracks, "master": master_meta, "feedback": panel, "info": info}
 

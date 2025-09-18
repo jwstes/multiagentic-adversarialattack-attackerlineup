@@ -68,7 +68,7 @@ class MasterMeta(BaseModel):
 
 class CritiqueEntry(BaseModel):
     name: str
-    kind: Literal["surrogate", "perceptual"]
+    kind: Literal["surrogate", "perceptual", "final"]
     metrics: Dict[str, Any]
     source: str
     updated_at: datetime = Field(default_factory=datetime.utcnow)

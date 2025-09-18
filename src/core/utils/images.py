@@ -1,13 +1,15 @@
 import base64
 import mimetypes
 import os
+import time
 from typing import Optional, Tuple
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 from io import BytesIO
 import hashlib
 import numpy as np
 from skimage.metrics import structural_similarity as ssim
 import torch
+import tempfile
 
 def is_url(s: str) -> bool:
     return s.lower().startswith(("http://", "https://"))
@@ -32,7 +34,6 @@ def image_to_data_url(path: str, force_format: Optional[str] = None) -> str:
     return f"data:{mime};base64,{b64}"
 
 def image_to_data_url_resized(path: str, max_side: int = 192, fmt: str = "JPEG", quality: int = 70) -> str:
-    """Create a small data URL for VL prompts."""
     if not os.path.exists(path):
         raise FileNotFoundError(f"Image path not found: {path}")
     with Image.open(path) as im:
@@ -55,8 +56,20 @@ def file_sha1(path: str) -> str:
             h.update(chunk)
     return h.hexdigest()[:16]
 
+def pil_open_safe(path: str, tries: int = 8, sleep_sec: float = 0.05) -> Image.Image:
+    last_err = None
+    for _ in range(tries):
+        try:
+            img = Image.open(path)
+            img.load()  # force read
+            return img
+        except (UnidentifiedImageError, OSError) as e:
+            last_err = e
+            time.sleep(sleep_sec)
+    raise last_err if last_err else UnidentifiedImageError(f"Cannot open image: {path}")
+
 def pil_read_rgb(path: str, size: Tuple[int, int] = (256, 256)) -> Image.Image:
-    img = Image.open(path).convert("RGB")
+    img = pil_open_safe(path).convert("RGB")
     if size is not None:
         img = img.resize(size, Image.BILINEAR)
     return img
@@ -73,7 +86,18 @@ def tensor_to_pil_unit(x: torch.Tensor) -> Image.Image:
 
 def save_png(img: Image.Image, path: str):
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    img.save(path)
+    # atomic write via temp file + replace
+    with tempfile.NamedTemporaryFile(dir=os.path.dirname(path), delete=False, suffix=".tmp") as tmp:
+        tmp_path = tmp.name
+    try:
+        img.save(tmp_path, format="PNG", optimize=True)
+        os.replace(tmp_path, path)  # atomic on the same filesystem
+    finally:
+        if os.path.exists(tmp_path):
+            try:
+                os.remove(tmp_path)
+            except OSError:
+                pass
 
 def compute_ssim_rgb_uint8(a: np.ndarray, b: np.ndarray) -> float:
     return sum(ssim(a[..., c], b[..., c], data_range=255) for c in range(3)) / 3.0
@@ -83,5 +107,5 @@ def pil_to_uint8(img: Image.Image) -> np.ndarray:
 
 def save_delta_npy(delta: torch.Tensor, path: str):
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    import numpy as np
+    np = __import__("numpy")
     np.save(path, delta.detach().cpu().numpy())
