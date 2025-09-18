@@ -18,7 +18,7 @@ class InfoAgent:
         mixing_desk: FileMixingDesk,
         default_areas: Optional[List[str]] = None,
         temperature: float = 0.2,
-        max_tokens: int = 1500,
+        max_tokens: int = 12000,
     ):
         self.client = vllm_client
         self.desk = mixing_desk

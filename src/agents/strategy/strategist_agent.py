@@ -104,7 +104,7 @@ class StrategistAgent:
             {"role": "system", "content": "You output ONLY a valid JSON object. No extra text."},
             {"role": "user", "content": [{"type": "text", "text": "Reformat to a JSON object with keys: suggestions, mixer_weights, rationale.\n\n" + bad_text[:6000]}]},
         ]
-        txt = self.vllm.chat_vision(messages, temperature=0.0, max_tokens=600, response_format={"type": "json_object"})
+        txt = self.vllm.chat_vision(messages, temperature=0.0, max_tokens=12000, response_format={"type": "json_object"})
         try:
             return json.loads(txt)
         except Exception:
@@ -115,7 +115,7 @@ class StrategistAgent:
 
     def run_once(self, image_id: str):
         messages = self._messages(image_id)
-        txt = self.vllm.chat_vision(messages, temperature=0.2, max_tokens=800, response_format={"type": "json_object"})
+        txt = self.vllm.chat_vision(messages, temperature=0.2, max_tokens=12000, response_format={"type": "json_object"})
         # Parse
         try:
             out = json.loads(txt)

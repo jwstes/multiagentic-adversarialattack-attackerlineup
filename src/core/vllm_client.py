@@ -10,7 +10,7 @@ class VLLMClient:
         self,
         messages: List[Dict[str, Any]],
         temperature: float = 0.2,
-        max_tokens: int = 1500,
+        max_tokens: int = 12000,
         response_format: Optional[Dict[str, Any]] = None,
     ) -> str:
         kwargs = dict(model=self.model, messages=messages, temperature=temperature, max_tokens=max_tokens)

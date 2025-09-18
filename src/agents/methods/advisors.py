@@ -108,7 +108,7 @@ class MethodAdvisor:
             {"role": "system", "content": ADVISOR_SYSTEM},
             {"role": "user", "content": content},
         ]
-        txt = self.vllm.chat_vision(messages, temperature=0.2, max_tokens=400, response_format={"type": "json_object"})
+        txt = self.vllm.chat_vision(messages, temperature=0.2, max_tokens=12000, response_format={"type": "json_object"})
         try:
             obj = json.loads(txt)
             if isinstance(obj, dict) and "suggestions" in obj and isinstance(obj["suggestions"], dict):

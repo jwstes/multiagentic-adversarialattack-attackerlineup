@@ -83,7 +83,7 @@ class ConductorLLMAgent:
 
     def run(self, image_id: str) -> ConductorObjective:
         messages = self.build_messages(image_id)
-        txt = self.vllm.chat_vision(messages, temperature=0.2, max_tokens=2048, response_format={"type": "json_object"})
+        txt = self.vllm.chat_vision(messages, temperature=0.2, max_tokens=12000, response_format={"type": "json_object"})
         data = self._parse_objective(txt)
 
         # sanitize ranges
