@@ -13,15 +13,17 @@ logger = setup_logging()
 
 SYSTEM_PROMPT = """You are StrategistAgent. Read the current adversarial 'Mixing Desk' state and output a JSON object with keys:
 - suggestions: per-agent dict, e.g.:
-  "FGSM_Agent": {"epsilon": float, "frequency": "low"|"high"|"neutral", "note": "..."}
-  "PGD_Agent": {"epsilon": float, "alpha": float, "steps": int, "frequency": "...", "note": "..."}
+  "FGSM_Agent": {"epsilon": float, "frequency": "low"|"high"|"neutral", "tv_weight": float, "roi_focus": "foreground"|"background"|null, "note": "..."}
+  "PGD_Agent": {"epsilon": float, "alpha": float, "steps": int, "frequency": "...", "tv_weight": float, "roi_focus": "...", "note": "..."}
+  "CW_Agent":  {"steps": int, "lr": float, "l2_weight": float, "frequency": "...", "tv_weight": float, "roi_focus": "..."}
   Only include keys you want to change.
-- mixer_weights: dict of {agent_name: weight >=0}, weights must sum to 1.0 (or leave empty to defer).
+- mixer_weights: dict of {agent_name: weight >=0}, sum to 1 (or leave empty).
 - rationale: short string.
 Constraints:
 - Obey epsilon_max from the objective.
-- If SSIM is low but confidence is high, consider lower frequency and/or reduced epsilon.
-- If confidence is below target but SSIM is high, allow slight increases in epsilon or 'high' frequency for one agent.
+- Favor diversity: if one track has high 'spec_high' or 'spec_overlap' with a peer, suggest other agents to bias 'frequency' to 'low' or increase 'tv_weight' to smooth their pattern. Reduce overlap between agents.
+- If SSIM is low, decrease eps or increase tv_weight, and possibly set frequency='low'.
+- If ViT final check blocks progress, consider emphasizing low/mid spectrum (lower 'spec_high') or adjusting ROI to 'foreground' or 'background' to vary spatial targeting.
 Output JSON only (no markdown)."""
 
 def _safe_read(path: str, default):

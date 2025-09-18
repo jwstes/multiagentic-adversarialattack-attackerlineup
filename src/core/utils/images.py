@@ -80,18 +80,34 @@ def pil_to_tensor_unit(img: Image.Image) -> torch.Tensor:
     return t
 
 def tensor_to_pil_unit(x: torch.Tensor) -> Image.Image:
-    x = x.detach().cpu().clamp(0, 1)
+    # x: 1x3xHxW, expected finite in [0,1]
+    x = x.detach().cpu()
+    # Replace NaN/Inf, then clamp
+    x = torch.nan_to_num(x, nan=0.5, posinf=1.0, neginf=0.0).clamp(0, 1)
     arr = (x.squeeze(0).permute(1, 2, 0).numpy() * 255.0).round().astype(np.uint8)
     return Image.fromarray(arr)
 
-def save_png(img: Image.Image, path: str):
+def save_png(img: Image.Image, path: str, max_retries: int = 5, sleep: float = 0.05):
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    # atomic write via temp file + replace
+    # atomic write via temp file + replace with retries (Windows may lock dest)
     with tempfile.NamedTemporaryFile(dir=os.path.dirname(path), delete=False, suffix=".tmp") as tmp:
         tmp_path = tmp.name
     try:
         img.save(tmp_path, format="PNG", optimize=True)
-        os.replace(tmp_path, path)  # atomic on the same filesystem
+        for i in range(max_retries):
+            try:
+                os.replace(tmp_path, path)  # atomic on same filesystem
+                break
+            except PermissionError:
+                time.sleep(sleep)
+        else:
+            # Final attempt: try remove and rename
+            try:
+                if os.path.exists(path):
+                    os.remove(path)
+                os.replace(tmp_path, path)
+            except PermissionError as e:
+                raise e
     finally:
         if os.path.exists(tmp_path):
             try:
@@ -109,3 +125,16 @@ def save_delta_npy(delta: torch.Tensor, path: str):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     np = __import__("numpy")
     np.save(path, delta.detach().cpu().numpy())
+
+def load_roi_mask(path: str, size_hw: tuple[int,int]) -> Optional[torch.Tensor]:
+    """
+    Load a grayscale mask (H,W) from path, resize to size_hw, return 1x1xH xW float tensor in [0,1].
+    White=1 => focus region. Return None if not found.
+    """
+    if not os.path.exists(path):
+        return None
+    img = pil_open_safe(path).convert("L").resize((size_hw[1], size_hw[0]), Image.BILINEAR)
+    arr = np.array(img).astype(np.float32) / 255.0
+    import torch
+    t = torch.from_numpy(arr)[None, None, :, :]  # 1x1xH xW
+    return t

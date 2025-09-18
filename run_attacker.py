@@ -17,6 +17,7 @@ from src.agents.conductor.agent import ConductorAgent
 from src.agents.conductor.llm_conductor import ConductorLLMAgent
 from src.agents.methods.fgsm_agent import FGSM_Agent
 from src.agents.methods.pgd_agent import PGD_Agent
+from src.agents.methods.cw_agent import CW_Agent
 from src.agents.methods.advisors import MethodAdvisor
 from src.agents.mixer.agent import MixerAgent
 from src.agents.critique.surrogate_agent import SurrogateCritiqueAgent
@@ -298,11 +299,14 @@ def orchestrate(image_path: str, fgsm_loops: int = 20, pgd_loops: int = 20, inte
     # 4) Method Agents with per-agent LLM advisors
     fgsm_advisor = MethodAdvisor("FGSM_Agent", desk, vllm=vllm)
     pgd_advisor = MethodAdvisor("PGD_Agent", desk, vllm=vllm)
+    cw_advisor = MethodAdvisor("CW_Agent", desk, vllm=vllm)
     fgsm = FGSM_Agent(desk, advisor=fgsm_advisor, llm_every_k=3)
     pgd = PGD_Agent(desk, advisor=pgd_advisor, llm_every_k=3)
+    cw = CW_Agent(desk, advisor=cw_advisor, llm_every_k=3)
 
     t_fgsm = safe_thread(loop_method, "FGSM", fgsm, image_id, fgsm_loops, interval, stop_event)
     t_pgd = safe_thread(loop_method, "PGD", pgd, image_id, pgd_loops, interval, stop_event)
+    t_cw = safe_thread(loop_method, "CW", cw, image_id, pgd_loops, interval, stop_event)
 
     # 5) Mixer and Critiques (+ FinalCheck)
     t_mixer = safe_thread(loop_mixer, "Mixer", image_id, interval, stop_event, desk)
@@ -316,14 +320,14 @@ def orchestrate(image_path: str, fgsm_loops: int = 20, pgd_loops: int = 20, inte
 
     t_status = safe_thread(loop_status, "Status", image_id, STATUS_EVERY_SEC, stop_event, desk)
 
-    t_guard = safe_thread(methods_guard, "MethodsGuard", t_fgsm, t_pgd, stop_event)
+    t_guard = safe_thread(methods_guard, "MethodsGuard", stop_event, t_fgsm, t_pgd, t_cw)
 
     # 7) Monitor
     monitor_early_stop(image_id=image_id, desk=desk, stop_event=stop_event, interval=interval, no_early_stop=no_early_stop)
 
     time.sleep(0.5)
     logger.info("[Main] Joining threads...")
-    for t in (t_fgsm, t_pgd, t_mixer, t_c_res, t_c_den, t_c_per, t_final, t_strat, t_status, t_guard):
+    for t in (t_fgsm, t_pgd, t_cw, t_mixer, t_c_res, t_c_den, t_c_per, t_final, t_strat, t_status, t_guard):
         t.join(timeout=5.0)
 
     # Final summary
@@ -390,11 +394,9 @@ def loop_status(image_id: str, interval: float, stop_event: Event, desk: FileMix
                 break
             time.sleep(0.1)
 
-def methods_guard(t1: Thread, t2: Thread, stop_event: Event):
-    # Wait for both method loops to finish
-    t1.join()
-    t2.join()
-    # If objective wasn’t met already, stop the rest
+def methods_guard(stop_event: Event, *threads: Thread):
+    for t in threads:
+        t.join()
     if not stop_event.is_set():
         logger.info("[Guard] Method loops completed without success; stopping (failure).")
         stop_event.set()

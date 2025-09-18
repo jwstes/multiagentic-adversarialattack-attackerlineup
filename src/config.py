@@ -51,4 +51,28 @@ FORCE_TARGET_CLASS = int(os.getenv("FORCE_TARGET_CLASS", "-1"))
 # In legacy "flip" mode, you may also require surrogate avg_conf – leave false for final_* modes
 REQUIRE_CONF_IN_FLIP = os.getenv("REQUIRE_CONF_IN_FLIP", "false").lower() == "true"
 
+# Complementarity & ROI
+DIVERSITY_BANDS = os.getenv("DIVERSITY_BANDS", "low,mid,high")  # bands reported
+DIVERSITY_LOW_CUTOFF = float(os.getenv("DIVERSITY_LOW_CUTOFF", "0.10"))   # as fraction of Nyquist
+DIVERSITY_HIGH_CUTOFF = float(os.getenv("DIVERSITY_HIGH_CUTOFF", "0.35"))
+TV_WEIGHT_DEFAULT = float(os.getenv("TV_WEIGHT_DEFAULT", "0.0"))         # default TV loss weight (per-agent can override via LLM)
+
+# Final model in loss (optional)
+INCLUDE_FINALCHECK_IN_LOSS = os.getenv("INCLUDE_FINALCHECK_IN_LOSS", "false").lower() == "true"
+FINALCHECK_LOSS_WEIGHT = float(os.getenv("FINALCHECK_LOSS_WEIGHT", "0.25"))  # blended into loss when enabled
+
+# Mixer optimizer
+MIXER_USE_FINAL = os.getenv("MIXER_USE_FINAL", "true").lower() == "true"  # include ViT signal in mixer objective
+MIXER_MAX_EVALS = int(os.getenv("MIXER_MAX_EVALS", "64"))                 # evaluations per cycle
+MIXER_RESTARTS = int(os.getenv("MIXER_RESTARTS", "2"))                    # restarts per cycle
+
+
+MIXER_SURROGATE_WEIGHT = float(os.getenv("MIXER_SURROGATE_WEIGHT", "0.25"))
+MIXER_FINAL_WEIGHT = float(os.getenv("MIXER_FINAL_WEIGHT", "0.75"))
+
+
+
+
+
+
 

@@ -1,0 +1,54 @@
+(mixingdeskadversarialattack) PS C:\Users\user\Desktop\multiagentic-adversarialattack-attackerlineup> python run_attacker.py --image img_0006.png
+2025-09-18 14:28:19 | INFO | agents | Models found under ./models
+2025-09-18 14:28:19 | INFO | agents | [Conductor] Prepared original | image_id=22adcc46aca5abbb | DEVICE_CHOICE=auto
+2025-09-18 14:28:21 | INFO | agents | [Baseline] resnet50=1 densenet121=1 vit_b_16=1
+2025-09-18 14:28:59 | INFO | agents | InfoAgent LLM call completed in 38303 ms
+2025-09-18 14:28:59 | INFO | agents | Info report saved to Mixing Desk: ./data/mixing_desk\22adcc46aca5abbb\info_report_20250918_062859.json
+2025-09-18 14:29:02 | INFO | agents | [ConductorLLM] Objective set: target_class=1 conf_target=0.90 ssim_min=0.75 eps_max=0.01570 agg=mean
+2025-09-18 14:29:02 | INFO | agents | [Conductor] FORCE_TARGET_CLASS applied: target_class=0
+2025-09-18 14:29:12 | INFO | agents | [Strategist] strategy.json updated for 22adcc46aca5abbb
+[PerceptualCritique] no master.png yet.
+[Status] Obj(mode=final_flip tclass=0 ssim_min=0.75 conf_target=0.90) | Master(ssim=- avg_conf=-) | Res(pred=- flip=- ct=-) | Den(pred=- flip=- ct=-) | ViT(pred=- flip=- ct=- succ_tgt=-)
+2025-09-18 14:29:15 | INFO | agents | [Monitor] ssim=0.0000 avg_conf=0.0000 final_flip=False final_target=False mode=final_flip (ssim_min=0.75)
+[FinalCheck:vit_b_16] No master.png yet.
+[SurrogateCritique:resnet50] no master.png yet.
+[SurrogateCritique:densenet121] no master.png yet.
+[PerceptualCritique] no master.png yet.
+[Mixer] No candidate tracks yet.
+[FGSM_Agent] step=0 params: epsilon=0.01, frequency=neutral, target_class=0, tv_weight=0.0 | ssim=0.9375 avg_conf=0.5523 -> ./data/mixing_desk\22adcc46aca5abbb\tracks\FGSM_Agent\latest.png
+[FinalCheck:vit_b_16] No master.png yet.
+[SurrogateCritique:resnet50] no master.png yet.
+[SurrogateCritique:densenet121] no master.png yet.
+[PerceptualCritique] no master.png yet.
+[PGD_Agent] step=0 params: epsilon=0.012, alpha=0.003, steps=10, frequency=neutral, target_class=0, tv_weight=0.0 | ssim=0.9631 avg_conf=0.9987 -> ./data/mixing_desk\22adcc46aca5abbb\tracks\PGD_Agent\latest.png
+[FGSM_Agent] step=1 params: epsilon=0.01, frequency=neutral, target_class=0, tv_weight=0.0 | ssim=0.9375 avg_conf=0.5519 -> ./data/mixing_desk\22adcc46aca5abbb\tracks\FGSM_Agent\latest.png
+[Status] Obj(mode=final_flip tclass=0 ssim_min=0.75 conf_target=0.90) | Master(ssim=- avg_conf=-) | Res(pred=- flip=- ct=-) | Den(pred=- flip=- ct=-) | ViT(pred=- flip=- ct=- succ_tgt=-)
+[FinalCheck:vit_b_16] No master.png yet.
+[SurrogateCritique:resnet50] no master.png yet.
+[SurrogateCritique:densenet121] no master.png yet.
+[PerceptualCritique] no master.png yet.
+2025-09-18 14:29:21 | INFO | agents | [Monitor] ssim=0.0000 avg_conf=0.0000 final_flip=False final_target=False mode=final_flip (ssim_min=0.75)
+[FGSM_Agent] step=2 params: epsilon=0.01, frequency=neutral, target_class=0, tv_weight=0.0 | ssim=0.9375 avg_conf=0.5519 -> ./data/mixing_desk\22adcc46aca5abbb\tracks\FGSM_Agent\latest.png
+[CW_Agent] step=0 params: steps=100, frequency=neutral, target_class=0, tv_weight=0.0 | ssim=0.9912 avg_conf=0.0000 -> ./data/mixing_desk\22adcc46aca5abbb\tracks\CW_Agent\latest.png
+[FinalCheck:vit_b_16] No master.png yet.
+[SurrogateCritique:resnet50] no master.png yet.
+[PGD_Agent] step=1 params: epsilon=0.012, alpha=0.003, steps=10, frequency=neutral, target_class=0, tv_weight=0.0 | ssim=0.9632 avg_conf=0.9997 -> ./data/mixing_desk\22adcc46aca5abbb\tracks\PGD_Agent\latest.png
+[SurrogateCritique:densenet121] no master.png yet.
+[PerceptualCritique] no master.png yet.
+[Mixer] Optimized weights: {'FGSM_Agent': 0.08249742325026187, 'PGD_Agent': 0.9175025767497381} | avg_conf=0.9994 ssim=0.9631 -> ./data/mixing_desk\22adcc46aca5abbb\master\master.png
+[FinalCheck:vit_b_16] pred=0 target=0 conf_target=0.9991 success_target=True flipped=True
+[SurrogateCritique:resnet50] pred=0 target=0 conf_target=1.0000 flipped=True
+[SurrogateCritique:densenet121] pred=0 target=0 conf_target=0.9844 flipped=True
+[PGD_Agent] step=2 params: epsilon=0.012, alpha=0.003, steps=10, frequency=neutral, target_class=0, tv_weight=0.0 | ssim=0.9632 avg_conf=0.9993 -> ./data/mixing_desk\22adcc46aca5abbb\tracks\PGD_Agent\latest.png
+[Status] Obj(mode=final_flip tclass=0 ssim_min=0.75 conf_target=0.90) | Master(ssim=0.9631 avg_conf=0.9994) | Res(pred=0 flip=True ct=1.0000) | Den(pred=0 flip=True ct=0.9844) | ViT(pred=0 flip=True ct=0.9991 succ_tgt=True)
+[PerceptualCritique] ssim=0.9631
+2025-09-18 14:29:25 | INFO | agents | [Monitor] Success criteria met; stopping.
+2025-09-18 14:29:25 | INFO | agents | [Result] Success mode=final_flip final_flip=True final_target=True ssim_min met=True
+2025-09-18 14:29:25 | INFO | agents | [Strategist] strategy.json updated for 22adcc46aca5abbb
+2025-09-18 14:29:25 | INFO | agents | [Main] Joining threads...
+[FGSM_Agent] step=3 params: epsilon=0.01, frequency=neutral, target_class=0, tv_weight=0.0 | ssim=0.9375 avg_conf=0.5523 -> ./data/mixing_desk\22adcc46aca5abbb\tracks\FGSM_Agent\latest.png
+[CW_Agent] step=1 params: steps=100, frequency=neutral, target_class=0, tv_weight=0.0 | ssim=0.9912 avg_conf=0.0000 -> ./data/mixing_desk\22adcc46aca5abbb\tracks\CW_Agent\latest.png
+2025-09-18 14:29:28 | INFO | agents | [Final] avg_conf=0.9994 ssim=0.9631 master=./data/mixing_desk\22adcc46aca5abbb\master\master.png
+2025-09-18 14:29:28 | INFO | agents | [Final] Feedback panel entries: ['FinalCheck_vit_b_16', 'SurrogateCritique_resnet50', 'SurrogateCritique_densenet121', 'PerceptualCritique']
+2025-09-18 14:29:28 | INFO | agents | [Main] Done.
+(mixingdeskadversarialattack) PS C:\Users\user\Desktop\multiagentic-adversarialattack-attackerlineup> 
